@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crew_system import kickoff_process
-
+from experts_crew_system import create_aws_architecture_recommendation
 app = FastAPI()
 
 class Requirements(BaseModel):
@@ -22,7 +22,7 @@ class Requirements(BaseModel):
 async def kickoff_requirements(req: Requirements):
     try:
         user_requirements = req.dict()
-        result = kickoff_process(user_requirements)
+        result = create_aws_architecture_recommendation(user_requirements)
         return {"success": True, "result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
