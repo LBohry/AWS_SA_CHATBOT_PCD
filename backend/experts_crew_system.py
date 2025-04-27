@@ -777,12 +777,19 @@ def build_architecture_crew(requirements_analysis_output, project_manager):
     # Update progress review context with all selected tasks
     update_task_contexts(selected_tasks)
     
+    from langchain_openai import ChatOpenAI
+    import os
+    manager_llm = ChatOpenAI(
+        base_url=os.environ.get("OPENAI_API_BASE"),
+        model=os.environ.get("OPENAI_MODEL_NAME", "crewai-llama3.3"),
+    )
     # Create the crew with the selected agents and tasks
     crew = Crew(
         agents=selected_agents,
         tasks=selected_tasks,
         process=Process.hierarchical,
         manager=project_manager,
+        manager_llm=manager_llm,
         verbose=2
     )
     
