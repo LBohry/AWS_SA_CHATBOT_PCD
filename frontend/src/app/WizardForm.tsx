@@ -1,4 +1,3 @@
-// src/app/WizardForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -15,7 +14,14 @@ import {
   Paper,
   CircularProgress,
   Backdrop,
+  Typography,
+  Tabs,
+  Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 // Define our step structure
 const steps = [
@@ -95,14 +101,38 @@ steps.forEach((step) => {
 // Add compliance_text for the conditional field
 initialValues["compliance_text"] = "";
 
+// Interface for the results
+interface TaskOutputs {
+  requirements_analysis: string;
+  software_architecture: string;
+  aws_service_selection: string;
+  security_architecture: string;
+  cost_optimization: string;
+  data_architecture: string;
+  devops_implementation: string;
+  integration_architecture: string;
+  architecture_validation: string;
+  final_synthesis: string;
+}
+
+interface ResultData {
+  architecture_recommendation: any;
+  task_outputs: TaskOutputs;
+}
+
 export default function WizardForm() {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState<ResultData | null>(null);
+  const [resultTab, setResultTab] = useState(0);
 
   // Simple function to check if we should show the compliance text field
   const shouldShowComplianceText = (values: Record<string, string>) => {
     return values.compliance_choice === "Other";
+  };
+
+  const handleResultTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setResultTab(newValue);
   };
 
   // Handle form submission
@@ -124,7 +154,6 @@ export default function WizardForm() {
 
     console.log("Submitting form data to API:", data);
     try {
-
       const response = await fetch("http://localhost:8000/api/kickoff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,11 +168,12 @@ export default function WizardForm() {
       if (resData.success) {
         setResult(resData.result);
       } else {
-        setResult("Error: " + (resData.detail || "Unknown server error"));
+        console.error("API returned error:", resData);
+        setResult(null);
       }
     } catch (error: any) {
       console.error("Submission error:", error);
-      setResult("Error: " + (error.message || "Failed to connect to server"));
+      setResult(null);
     } finally {
       setLoading(false);
       helpers.setSubmitting(false);
@@ -174,6 +204,76 @@ export default function WizardForm() {
     }
 
     return visibleSteps;
+  };
+
+  // Render the task outputs
+  const renderTaskOutputs = () => {
+    if (!result || !result.task_outputs) return null;
+
+    const taskOutputs = result.task_outputs;
+    const taskNames = {
+      requirements_analysis: "Requirements Analysis",
+      software_architecture: "Software Architecture",
+      aws_service_selection: "AWS Service Selection",
+      security_architecture: "Security Architecture",
+      cost_optimization: "Cost Optimization",
+      data_architecture: "Data Architecture",
+      devops_implementation: "DevOps Implementation",
+      integration_architecture: "Integration Architecture",
+      architecture_validation: "Architecture Validation",
+      final_synthesis: "Final Synthesis",
+    };
+
+    return (
+      <Box sx={{ width: "100%" }}>
+        {Object.entries(taskOutputs).map(([key, output]) => (
+          <Accordion key={key}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle1">
+                {taskNames[key as keyof typeof taskNames] || key}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Paper 
+                variant="outlined" 
+                sx={{ 
+                  p: 2, 
+                  backgroundColor: "#f5f5f5", 
+                  maxHeight: "400px", 
+                  overflow: "auto" 
+                }}
+              >
+                <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{output}</pre>
+              </Paper>
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </Box>
+    );
+  };
+
+  // Render the final recommendation
+  const renderFinalRecommendation = () => {
+    if (!result || !result.architecture_recommendation) return null;
+
+    return (
+      <Paper 
+        variant="outlined" 
+        sx={{ 
+          p: 3, 
+          backgroundColor: "#f5f5f5", 
+          maxHeight: "600px", 
+          overflow: "auto" 
+        }}
+      >
+        <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>
+          {typeof result.architecture_recommendation === 'string' 
+            ? result.architecture_recommendation 
+            : JSON.stringify(result.architecture_recommendation, null, 2)
+          }
+        </pre>
+      </Paper>
+    );
   };
 
   return (
@@ -298,8 +398,26 @@ export default function WizardForm() {
             {/* Results display */}
             {result && (
               <Paper square elevation={3} sx={{ p: 3, mt: 3 }}>
-                <h2>Results from Crew AI:</h2>
-                <pre style={{ whiteSpace: "pre-wrap" }}>{result}</pre>
+                <Typography variant="h4" gutterBottom>
+                  AWS Architecture Recommendation
+                </Typography>
+                
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                  <Tabs 
+                    value={resultTab} 
+                    onChange={handleResultTabChange}
+                    aria-label="result tabs"
+                  >
+                    <Tab label="Final Recommendation" />
+                    <Tab label="Detailed Task Outputs" />
+                  </Tabs>
+                </Box>
+                
+                {resultTab === 0 ? (
+                  renderFinalRecommendation()
+                ) : (
+                  renderTaskOutputs()
+                )}
               </Paper>
             )}
           </Form>

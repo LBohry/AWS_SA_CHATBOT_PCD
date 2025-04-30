@@ -1,5 +1,6 @@
-from crewai import Agent, Task, Crew, Process
-from crewai_tools import BaseTool, SerperDevTool, tool
+from crewai import Agent, Task, Crew, Process, LLM
+from crewai_tools import SerperDevTool
+from crewai.tools import tool
 from dotenv import load_dotenv
 import re
 import json
@@ -10,58 +11,22 @@ load_dotenv()
 # Initialize tools
 search_tool = SerperDevTool()
 
-# Create custom tools
-@tool("Software architecture pattern analyzer")
-def analyze_architecture_patterns(query):
-    """Analyzes software architecture patterns for specific use cases"""
-    return search_tool.search(f"software architecture patterns for {query} pros and cons analysis")
 
-@tool("AWS service recommendation")
-def aws_service_recommendation(requirements):
-    """Recommends AWS services based on specific requirements"""
-    return search_tool.search(f"best AWS services for {requirements} detailed comparison")
-
-@tool("Requirements analyzer")
-def analyze_requirements(use_case):
-    """Analyzes requirements for a specific use case and determines needed specialists"""
-    return search_tool.search(f"detailed technical requirements analysis for {use_case} AWS implementation")
-
-@tool("Team composition analyzer")
-def analyze_team_composition(requirements_analysis):
-    """Determines optimal team composition based on requirements analysis"""
-    return search_tool.search(f"optimal technical team composition for {requirements_analysis}")
-
-# Define the hierarchical manager agent
-project_manager = Agent(
-    role="Project Manager",
-    goal="Orchestrate the creation of a detailed, implementation-ready AWS architecture and manage the specialist team",
-    backstory=(
-        "You are a seasoned technical project manager with 15+ years of experience leading complex AWS projects. "
-        "You excel at coordinating specialist teams, synthesizing diverse inputs, and ensuring "
-        "the final deliverable meets all customer requirements while maintaining practical "
-        "implementability. You have a track record of delivering solutions on time and within budget."
-    ),
-    verbose=True,
-    allow_delegation=True
-)
-
-# Define the requirements assessment agent
+# Define the specialist agents
 requirements_analyst = Agent(
-    role="Requirements Analyst & Team Architect",
-    goal="Analyze project requirements and determine which specialists are needed for {use_case}",
+    role="Requirements Analyst",
+    goal="Analyze project requirements and determine technical needs for {use_case}",
     backstory=(
         "You are a senior technical business analyst who specializes in translating business "
-        "requirements into technical specifications and determining the optimal team composition. "
-        "You excel at identifying which specialty areas will be crucial for project success and "
-        "can accurately rate their importance on a scale of 1-5. Your comprehensive analyses "
-        "help technical teams focus their efforts on the most important aspects of a solution."
+        "requirements into technical specifications. You excel at identifying which "
+        "technical aspects will be crucial for project success and can accurately analyze "
+        "the technical implications of business requirements."
     ),
-    tools=[analyze_requirements, analyze_team_composition],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
-# Define the specialist agents (will be conditionally included based on requirements analysis)
 software_architect = Agent(
     role="Software Architecture Specialist",
     goal="Design the optimal software architecture pattern for {use_case} before cloud implementation",
@@ -72,9 +37,10 @@ software_architect = Agent(
         "scalability needs, and integration complexity. You specialize in designing systems that can be "
         "effectively implemented on AWS."
     ),
-    tools=[analyze_architecture_patterns],
+    tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 aws_expert = Agent(
@@ -86,9 +52,10 @@ aws_expert = Agent(
         "You specialize in selecting the right AWS services that align with both technical requirements "
         "and business constraints, paying particular attention to the specific parameters of {use_case}."
     ),
-    tools=[search_tool, aws_service_recommendation],
+    tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 security_expert = Agent(
@@ -102,7 +69,8 @@ security_expert = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 cost_specialist = Agent(
@@ -117,7 +85,8 @@ cost_specialist = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 data_architect = Agent(
@@ -131,7 +100,8 @@ data_architect = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 devops_engineer = Agent(
@@ -145,7 +115,8 @@ devops_engineer = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 integration_specialist = Agent(
@@ -160,7 +131,8 @@ integration_specialist = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 implementation_validator = Agent(
@@ -174,169 +146,195 @@ implementation_validator = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
 solution_architect = Agent(
     role="Solution Architecture Integrator",
-    goal="Synthesize all specialist inputs into a cohesive, implementation-ready architecture document",
+    goal="Synthesize all specialist inputs into a comprehensive, implementation-ready architecture document for {use_case}",
     backstory=(
         "You are a Principal Solutions Architect with expertise in creating comprehensive AWS implementation guides. "
-        "You excel at taking inputs from various specialists and crafting them into a cohesive, detailed document "
-        "that serves as a step-by-step implementation guide. Your architecture documents are known for their "
-        "clarity, completeness, and practical implementability."
+        "You excel at taking detailed inputs from various specialists and crafting them into a cohesive, comprehensive document "
+        "that preserves each specialist's unique contributions while creating a coherent implementation guide. "
+        "Your architecture documents are known for their clarity, completeness, practical implementability, "
+        "and for faithfully representing the expertise and recommendations from each specialist domain."
     ),
     verbose=True,
-    allow_delegation=True
+    allow_delegation=False,  # Changed to False for sequential flow
+    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
 )
 
-# Task 1: Initial Requirements Analysis and Team Assembly
+# Task 1: Initial Requirements Analysis
 task_analyze_requirements = Task(
     description=(
-        "Analyze the provided use case '{use_case}' and determine which specialist areas are needed.\n"
-        "Consider the following aspects and rate their importance on a scale of 1-5:\n"
-        "1. software_architecture: How complex is the software architecture needs?\n"
-        "2. security: How important are security and compliance ({security_tier}, {compliance})?\n"
-        "3. cost_optimization: How critical is cost optimization ({cost_profile})?\n"
+        "As the first step in this architecture design process, analyze the complete set of project requirements to determine technical needs.\n\n"
+        "STEP 1: Format the requirements as follows and analyze them:\n"
+        "- use_case: {use_case}\n"
+        "- performance: {performance}\n"
+        "- availability: {availability}\n"
+        "- security_tier: {security_tier}\n"
+        "- compliance: {compliance}\n"
+        "- cost_profile: {cost_profile}\n"
+        "- implementation_time: {implementation_time}\n"
+        "- required_expertise: {required_expertise}\n"
+        "- scalability: {scalability}\n"
+        "- ease_of_implementation: {ease_of_implementation}\n"
+        "- integration_complexity: {integration_complexity}\n\n"
+
+        "STEP 2: Provide a comprehensive analysis of the requirements, detailing the technical implications "
+        "and challenges associated with implementing this system on AWS.\n\n"
+        "STEP 3: Explicitly rate the following aspects on a scale of 1-5:\n"
+        "1. software_architecture_complexity: How complex is the software architecture needs?\n"
+        "2. security_requirements: How important are security and compliance?\n"
+        "3. cost_optimization_needs: How critical is cost optimization?\n"
         "4. data_complexity: How complex are the data handling requirements?\n"
         "5. devops_complexity: How sophisticated are the deployment and operations needs?\n"
-        "6. performance_requirements: How demanding are the performance needs ({performance})?\n"
-        "7. availability_requirements: How high are the availability requirements ({availability})?\n"
-        "8. integration_complexity: How complex are the integration requirements ({integration_complexity})?\n\n"
+        "6. performance_requirements: How demanding are the performance needs?\n"
+        "7. availability_requirements: How high are the availability requirements?\n"
+        "8. integration_complexity: How complex are the integration requirements?\n\n"
         "For each area, provide a score from 1-5 where:\n"
         "1 = Not important/minimal requirements\n"
         "3 = Moderately important/standard requirements\n"
         "5 = Critically important/complex requirements\n\n"
-        "Based on this scoring, recommend which specialist roles should be included in the team.\n\n"
-        "FORMAT YOUR RESPONSE AS FOLLOWS (include the JSON and surrounding tags):\n"
+        "YOUR RESPONSE MUST INCLUDE the complexity ratings in the following format (this is absolutely required):\n\n"
         "<assessment_scores>\n"
-        "{{\n"
-        "  \"software_architecture\": X,\n"
-        "  \"security\": X,\n"
-        "  \"cost_optimization\": X,\n"
+        "{\n"
+        "  \"software_architecture_complexity\": X,\n"
+        "  \"security_requirements\": X,\n"
+        "  \"cost_optimization_needs\": X,\n"
         "  \"data_complexity\": X,\n"
         "  \"devops_complexity\": X,\n"
         "  \"performance_requirements\": X,\n"
         "  \"availability_requirements\": X,\n"
         "  \"integration_complexity\": X\n"
-        "}}\n"
-        "</assessment_scores>\n\n"
-        "AFTER the JSON, provide detailed justification for each score based on the use case requirements."
+        "}\n"
+        "</assessment_scores>\n"
     ),
     expected_output=(
-        "A comprehensive requirements analysis with specialist area scores (1-5) in JSON format, "
-        "followed by detailed justifications for each score based on the use case requirements."
+        "A comprehensive requirements analysis that details the technical requirements, key challenges, "
+        "and overall project complexity for implementing the {use_case} on AWS, with explicit complexity "
+        "ratings (1-5) for each technical aspect enclosed in <assessment_scores> tags."
     ),
     agent=requirements_analyst
 )
 
-# Task 2: Project Planning and Team Coordination
-task_project_planning = Task(
-    description=(
-        "Based on the requirements analysis and specialist recommendations, create a detailed project plan for developing "
-        "the AWS architecture recommendation for {use_case}.\n\n"
-        "The plan should include:\n"
-        "1. Team composition - which specialists will be involved based on the requirements analysis\n"
-        "2. Work breakdown structure - what tasks each specialist will perform\n"
-        "3. Dependencies between specialist tasks\n"
-        "4. Integration points where specialist outputs will be combined\n"
-        "5. Timeline for the architecture development process\n"
-        "6. Key deliverables expected from each specialist\n\n"
-        "Also include a coordination plan detailing how you will manage the specialist team to ensure "
-        "their outputs align and integrate properly into a cohesive architecture document."
-    ),
-    expected_output=(
-        "A detailed project plan with team composition, work breakdown structure, task dependencies, "
-        "integration points, timeline, and key deliverables, plus a coordination strategy."
-    ),
-    agent=project_manager,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,            
-            "expected_output": task_analyze_requirements.expected_output
-        }
-        
-    ]
-)
-
-# Task 3: Software Architecture Design (Conditional)
+# Task 2: Software Architecture Design 
 task_design_software_architecture = Task(
     description=(
-        "Design the optimal software architecture pattern for {use_case} based on the requirements document.\n"
+        "Design the optimal software architecture pattern for {use_case} based on the requirements analysis.\n"
         "Consider whether the solution should use:\n"
         "1. Monolithic architecture vs. microservices\n"
         "2. Serverless vs. container-based approaches\n"
         "3. Event-driven vs. request-response patterns\n"
         "4. Data storage approaches (SQL, NoSQL, data lake)\n"
         "5. Integration patterns with existing systems\n\n"
+        "Use the search tool to conduct multiple specific searches for each decision point, such as:\n"
+        "- \"microservices vs monolithic for {use_case} with {performance} performance needs\"\n"
+        "- \"serverless architecture patterns for {use_case} with {scalability} scalability requirements\"\n"
+        "- \"event-driven architecture for {use_case} with {integration_complexity} integration needs\"\n\n"
+        "Important: Make separate, focused searches for each architectural decision rather than one general search.\n\n"
         "For each architectural decision:\n"
         "1. Explain the rationale based on specific requirements\n"
         "2. Identify implications for AWS implementation\n"
         "3. Describe how it addresses {performance}, {scalability}, and {ease_of_implementation} needs\n"
         "4. Detail how it aligns with {required_expertise} expertise level\n\n"
-        "Include architectural diagrams showing components and their interactions."
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<software_architecture>\n"
+        "# Pattern Decision\n"
+        "- Selected Pattern: [Pattern name]\n"
+        "- Rationale: [Brief explanation]\n"
+        "- AWS Implementation Impact: [Key considerations]\n"
+        "\n"
+        "# Component Structure\n"
+        "- Component 1: [Purpose and function]\n"
+        "- Component 2: [Purpose and function]\n"
+        "\n"
+        "# Data Flow\n"
+        "- Flow 1: [Source → Destination, purpose]\n"
+        "- Flow 2: [Source → Destination, purpose]\n"
+        "\n"
+        "# Integration Points\n"
+        "- Integration 1: [System, method, purpose]\n"
+        "- Integration 2: [System, method, purpose]\n"
+        "\n"
+        "# Requirement Alignment\n"
+        "- Performance: [How architecture addresses this]\n"
+        "- Scalability: [How architecture addresses this]\n"
+        "- Implementation: [How architecture addresses this]\n"
+        "</software_architecture>\n"
     ),
     expected_output=(
-        "A detailed software architecture design document that includes:\n"
-        "- Selection of appropriate architectural patterns with rationale\n"
-        "- Component diagrams showing system structure\n"
-        "- Data flow diagrams showing information movement\n"
-        "- Integration approach with existing systems\n"
-        "- Clear mapping between requirements and architectural decisions"
+        "A structured software architecture design document enclosed in <software_architecture> tags that includes "
+        "the selected architectural patterns with rationale, component structure, data flows, integration points, "
+        "and alignment with key requirements."
     ),
     agent=software_architect,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        }
-    ]
+    context=[task_analyze_requirements],
+    tools=[search_tool]
 )
 
-# Task 4: AWS Service Selection
+# Task 3: AWS Service Selection
 task_aws_service_selection = Task(
     description=(
-        "Based on the project requirements and software architecture design (if available), select the optimal AWS services to implement {use_case}.\n"
+        "Based on the project requirements and software architecture design, select the optimal AWS services to implement {use_case}.\n"
         "For each component in the architecture:\n"
-        "1. Recommend specific AWS services with justification\n"
-        "2. Detail service configurations to meet {performance}, {availability}, and {scalability} needs\n"
-        "3. Identify integration points between services\n"
-        "4. Evaluate alternative AWS services considered and explain selection rationale\n"
-        "5. Provide pricing estimates based on {cost_profile}\n\n"
-        "The output should be a comprehensive AWS service mapping for the architecture with specific configuration details."
+        "1. Use the search tool to search for AWS service recommendations with specific requirements, such as:\n"
+        "   - \"high-performance database for {use_case} with {performance} needs and {availability} availability\"\n"
+        "   - \"compute solution for {use_case} with {scalability} scalability requirements\"\n"
+        "   - \"storage solution for {use_case} with {cost_profile} cost profile\"\n\n"
+        "2. Important: Make separate, focused searches for each major component rather than one general search.\n\n"
+        "3. For each AWS service recommended:\n"
+        "   - Detail specific instance types, sizes, and configurations to meet requirements\n"
+        "   - Explain how it integrates with other selected services\n"
+        "   - Identify any alternatives considered and why they were rejected\n"
+        "   - Provide sizing and capacity recommendations based on the use case scale\n\n"
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<aws_services>\n"
+        "# Compute Services\n"
+        "- Service: [Name]\n"
+        "- Configuration: [Instance type/size/settings]\n"
+        "- Purpose: [What it handles]\n"
+        "- Alternatives Rejected: [Name, reason]\n"
+        "\n"
+        "# Database Services\n"
+        "- Service: [Name]\n"
+        "- Configuration: [Instance type/size/settings]\n"
+        "- Purpose: [What it handles]\n"
+        "- Alternatives Rejected: [Name, reason]\n"
+        "\n"
+        "# Storage Services\n"
+        "- Service: [Name]\n"
+        "- Configuration: [Settings]\n"
+        "- Purpose: [What it handles]\n"
+        "- Alternatives Rejected: [Name, reason]\n"
+        "\n"
+        "# Networking Services\n"
+        "- Service: [Name]\n"
+        "- Configuration: [Settings]\n"
+        "- Purpose: [What it handles]\n"
+        "- Alternatives Rejected: [Name, reason]\n"
+        "\n"
+        "# Integration Services\n"
+        "- Service: [Name]\n"
+        "- Configuration: [Settings]\n"
+        "- Purpose: [What it handles]\n"
+        "- Alternatives Rejected: [Name, reason]\n"
+        "</aws_services>\n"
     ),
     expected_output=(
-        "A detailed AWS service selection document that includes:\n"
-        "- Specific AWS services mapped to architecture components\n"
-        "- Service configuration details and parameters\n"
-        "- Integration approach between services\n"
-        "- Cost estimates aligned with {cost_profile} requirements\n"
-        "- Rationale for each selection tied to specific requirements"
+        "A structured AWS service selection document enclosed in <aws_services> tags that includes "
+        "specific AWS services organized by category, with detailed configurations, purposes, and "
+        "alternatives considered for each service category."
     ),
     agent=aws_expert,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        }
-    ],
-    tools=[search_tool, aws_service_recommendation]
+    context=[task_analyze_requirements, task_design_software_architecture],
+    tools=[search_tool]
 )
 
-# Task 5: Security & Compliance Architecture (Conditional)
+# Task 4: Security & Compliance Architecture
 task_security_architecture = Task(
     description=(
         "Design the security architecture for the {use_case} implementation to meet {security_tier} and {compliance} requirements.\n"
@@ -347,39 +345,53 @@ task_security_architecture = Task(
         "4. Detail authentication and authorization mechanisms\n"
         "5. Design logging, monitoring, and alerting for security events\n"
         "6. Document how the architecture meets {compliance} requirements\n\n"
+        "Use the search tool to find specific information about AWS security best practices for each service and compliance requirement.\n\n"
         "Include specific configurations and policies required for implementation."
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<security_architecture>\n"
+        "# IAM Configuration\n"
+        "- Roles: [List with purposes]\n"
+        "- Policies: [Key policies with brief JSON examples]\n"
+        "- Permission Boundaries: [Description]\n"
+        "\n"
+        "# Network Security\n"
+        "- VPC Design: [Configuration details]\n"
+        "- Security Groups: [Key rules]\n"
+        "- NACLs: [Key rules]\n"
+        "- WAF Configuration: [If applicable]\n"
+        "\n"
+        "# Data Protection\n"
+        "- Encryption at Rest: [Methods for each service]\n"
+        "- Encryption in Transit: [Methods]\n"
+        "- Key Management: [KMS details]\n"
+        "\n"
+        "# Authentication & Authorization\n"
+        "- User Authentication: [Methods]\n"
+        "- Service Authentication: [Methods]\n"
+        "- Authorization Controls: [Methods]\n"
+        "\n"
+        "# Monitoring & Logging\n"
+        "- CloudTrail Configuration: [Settings]\n"
+        "- CloudWatch Alarms: [Key alarms]\n"
+        "- Security Event Monitoring: [Approach]\n"
+        "\n"
+        "# Compliance Mapping\n"
+        "- {compliance} Requirement 1: [Implementation]\n"
+        "- {compliance} Requirement 2: [Implementation]\n"
+        "</security_architecture>\n"
     ),
     expected_output=(
-        "A comprehensive security architecture document that includes:\n"
-        "- IAM configuration with actual policy JSON\n"
-        "- Network security architecture with diagrams\n"
-        "- Encryption implementation details\n"
-        "- Authentication and authorization design\n"
-        "- Security monitoring approach\n"
-        "- Compliance mapping showing how requirements are satisfied"
+        "A structured security architecture document enclosed in <security_architecture> tags that includes "
+        "detailed IAM configurations, network security design, data protection measures, authentication and "
+        "authorization mechanisms, monitoring approach, and compliance mapping."
     ),
     agent=security_expert,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ],
+    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection],
     tools=[search_tool]
 )
 
-# Task 6: Cost Optimization Design (Conditional)
+# Task 5: Cost Optimization Design
 task_cost_optimization = Task(
     description=(
         "Optimize the proposed AWS architecture for {cost_profile} requirements while maintaining {performance} and {availability} needs.\n"
@@ -390,39 +402,55 @@ task_cost_optimization = Task(
         "4. Identify opportunities for serverless implementations to reduce costs\n"
         "5. Design data transfer optimization to minimize network costs\n"
         "6. Recommend operational practices for cost control\n\n"
-        "Provide a detailed cost estimate with breakdown by service."
+        "Use the search tool to find specific cost optimization recommendations for each AWS service in your architecture.\n\n"
+                "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<cost_optimization>\n"
+        "# Pricing Models\n"
+        "- Compute: [On-demand/Reserved/Savings Plans/Spot recommendations]\n"
+        "- Storage: [Pricing tier recommendations]\n"
+        "- Database: [Pricing model recommendations]\n"
+        "- Network: [Pricing considerations]\n"
+        "\n"
+        "# Instance Optimizations\n"
+        "- Compute Right-sizing: [Recommendations]\n"
+        "- Storage Right-sizing: [Recommendations]\n"
+        "- Database Right-sizing: [Recommendations]\n"
+        "\n"
+        "# Auto-scaling Design\n"
+        "- Scaling Policies: [Configurations]\n"
+        "- Schedule-based Scaling: [If applicable]\n"
+        "- Predictive Scaling: [If applicable]\n"
+        "\n"
+        "# Serverless Opportunities\n"
+        "- Function 1: [Service, purpose, cost benefit]\n"
+        "- Function 2: [Service, purpose, cost benefit]\n"
+        "\n"
+        "# Cost Control\n"
+        "- Budgets: [Recommendations]\n"
+        "- Cost Allocation Tags: [Strategy]\n"
+        "- Governance Controls: [Recommendations]\n"
+        "\n"
+        "# Monthly Cost Estimate\n"
+        "- Compute: [Est. cost]\n"
+        "- Storage: [Est. cost]\n"
+        "- Database: [Est. cost]\n"
+        "- Network: [Est. cost]\n"
+        "- Other Services: [Est. cost]\n"
+        "- Total Monthly: [Est. cost]\n"
+        "</cost_optimization>\n"
     ),
     expected_output=(
-        "A detailed cost optimization plan that includes:\n"
-        "- Specific pricing model recommendations for each service\n"
-        "- Instance type and size selections with rationale\n"
-        "- Auto-scaling design for cost efficiency\n"
-        "- Data transfer optimization approach\n"
-        "- Monthly cost estimates with breakdown\n"
-        "- Cost control and governance recommendations"
+        "A structured cost optimization plan enclosed in <cost_optimization> tags that includes "
+        "specific pricing model recommendations, instance optimizations, auto-scaling design, "
+        "serverless opportunities, cost control measures, and detailed monthly cost estimates."
     ),
     agent=cost_specialist,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ],
+    context=[task_analyze_requirements, task_aws_service_selection],
     tools=[search_tool]
 )
 
-# Task 7: Data Architecture Design (Conditional)
+# Task 6: Data Architecture Design
 task_data_architecture = Task(
     description=(
         "Design the data architecture for {use_case} that optimizes data flow, storage, and processing.\n"
@@ -433,39 +461,52 @@ task_data_architecture = Task(
         "4. Detail data security and privacy implementations for {compliance}\n"
         "5. Design caching strategies for {performance} requirements\n"
         "6. Optimize data storage for {cost_profile} requirements\n\n"
-        "Include data flow diagrams and specific AWS service configurations."
+        "Use the search tool to research best practices for data architecture in AWS for your specific use case and requirements.\n\n"
+           "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<data_architecture>\n"
+        "# Data Models\n"
+        "- Entity 1: [Key attributes, relationships]\n"
+        "- Entity 2: [Key attributes, relationships]\n"
+        "\n"
+        "# Storage Solutions\n"
+        "- Primary Database: [Service, configuration, purpose]\n"
+        "- Secondary Database: [Service, configuration, purpose]\n"
+        "- Object Storage: [Service, configuration, purpose]\n"
+        "- Caching Layer: [Service, configuration, purpose]\n"
+        "\n"
+        "# Data Pipelines\n"
+        "- Ingestion Pipeline: [Services, flow]\n"
+        "- Processing Pipeline: [Services, flow]\n"
+        "- Analytics Pipeline: [Services, flow]\n"
+        "\n"
+        "# Backup & Recovery\n"
+        "- Backup Strategy: [Method, frequency]\n"
+        "- Retention Policy: [Details]\n"
+        "- Recovery Process: [Steps, RTO/RPO]\n"
+        "\n"
+        "# Data Security\n"
+        "- Access Controls: [Methods]\n"
+        "- Encryption: [Methods]\n"
+        "- Compliance Controls: [For {compliance}]\n"
+        "\n"
+        "# Performance Optimization\n"
+        "- Caching Strategy: [Details]\n"
+        "- Read/Write Optimization: [Methods]\n"
+        "- Query Optimization: [Methods]\n"
+        "</data_architecture>\n"
     ),
     expected_output=(
-        "A comprehensive data architecture document that includes:\n"
-        "- Data models and schema designs\n"
-        "- Data pipeline architecture diagrams\n"
-        "- Storage configuration details\n"
-        "- Backup and DR approach\n"
-        "- Data security implementation\n"
-        "- Performance optimization strategies"
+        "A structured data architecture document enclosed in <data_architecture> tags that includes "
+        "detailed data models, storage solutions, data pipeline designs, backup and recovery strategies, "
+        "data security measures, and performance optimization approaches."
     ),
     agent=data_architect,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ],
+    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection, task_security_architecture],
     tools=[search_tool]
 )
 
-# Task 8: DevOps & Implementation Plan (Conditional)
+# Task 7: DevOps & Implementation Plan
 task_devops_implementation = Task(
     description=(
         "Design the DevOps processes and implementation plan for deploying {use_case} within {implementation_time} timeline.\n"
@@ -476,39 +517,55 @@ task_devops_implementation = Task(
         "4. Create runbooks for common operational procedures\n"
         "5. Detail implementation phases and timeline\n"
         "6. Specify required team resources and skills\n\n"
-        "Include actual code snippets and configuration files."
+        "Use the search tool to research DevOps best practices and implementation patterns specific to your AWS architecture.\n\n"
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<devops_implementation>\n"
+        "# Infrastructure as Code\n"
+        "- Tool Selection: [CloudFormation/Terraform]\n"
+        "- Template Structure: [Organization approach]\n"
+        "- Key Components: [List with sample code snippets]\n"
+        "\n"
+        "# CI/CD Pipeline\n"
+        "- Services: [CodePipeline/GitHub Actions/etc.]\n"
+        "- Pipeline Stages: [List with configurations]\n"
+        "- Testing Strategy: [Approaches]\n"
+        "- Deployment Strategy: [Blue-green/Canary/etc.]\n"
+        "\n"
+        "# Monitoring & Alerting\n"
+        "- CloudWatch Dashboards: [Key metrics]\n"
+        "- CloudWatch Alarms: [Key thresholds]\n"
+        "- Log Management: [Approach]\n"
+        "- Notification Strategy: [Methods]\n"
+        "\n"
+        "# Operational Runbooks\n"
+        "- Deployment Procedure: [Steps]\n"
+        "- Rollback Procedure: [Steps]\n"
+        "- Incident Response: [Steps]\n"
+        "- Routine Maintenance: [Steps]\n"
+        "\n"
+        "# Implementation Timeline\n"
+        "- Phase 1: [Tasks, duration]\n"
+        "- Phase 2: [Tasks, duration]\n"
+        "- Phase 3: [Tasks, duration]\n"
+        "\n"
+        "# Team Resources\n"
+        "- Roles Required: [List]\n"
+        "- Skill Requirements: [List]\n"
+        "- Estimated Effort: [Person-months]\n"
+        "</devops_implementation>\n"
     ),
     expected_output=(
-        "A detailed DevOps and implementation plan that includes:\n"
-        "- IaC templates with actual code\n"
-        "- CI/CD pipeline configuration\n"
-        "- Monitoring setup with CloudWatch configurations\n"
-        "- Operational runbooks\n"
-        "- Implementation timeline with phases\n"
-        "- Team resource plan"
+        "A structured DevOps implementation plan enclosed in <devops_implementation> tags that includes "
+        "detailed Infrastructure as Code approach, CI/CD pipeline design, monitoring and alerting strategy, "
+        "operational runbooks, implementation timeline, and team resource requirements."
     ),
     agent=devops_engineer,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ],
+    context=[task_analyze_requirements, task_aws_service_selection],
     tools=[search_tool]
 )
 
-# Task 9: Design Integration Architecture
+# Task 8: Integration Architecture
 task_integration_architecture = Task(
     description=(
         "Design the integration architecture for {use_case} with {integration_complexity} complexity requirements.\n"
@@ -519,75 +576,52 @@ task_integration_architecture = Task(
         "4. Create message schemas and contracts for system communication\n"
         "5. Detail error handling and retry strategies\n"
         "6. Define monitoring approach for integration points\n\n"
-        "Include integration architecture diagrams and specific AWS service configurations."
+        "Use the search tool to research integration patterns and AWS services that are appropriate for your specific integration requirements.\n\n"
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<integration_architecture>\n"
+        "# API Design\n"
+        "- API Gateway Configuration: [Settings]\n"
+        "- Endpoint 1: [Path, method, purpose, sample request/response]\n"
+        "- Endpoint 2: [Path, method, purpose, sample request/response]\n"
+        "\n"
+        "# Event Architecture\n"
+        "- EventBridge Configuration: [Settings]\n"
+        "- Event Pattern 1: [Source, detail, purpose]\n"
+        "- Event Pattern 2: [Source, detail, purpose]\n"
+        "\n"
+        "# Authentication & Authorization\n"
+        "- API Authentication: [Methods]\n"
+        "- Service Authentication: [Methods]\n"
+        "- Authorization Controls: [Methods]\n"
+        "\n"
+        "# Message Schemas\n"
+        "- Schema 1: [Purpose, key fields, sample]\n"
+        "- Schema 2: [Purpose, key fields, sample]\n"
+        "\n"
+        "# Error Handling\n"
+        "- Retry Strategy: [Pattern, limits]\n"
+        "- Dead Letter Queues: [Configuration]\n"
+        "- Failure Notification: [Method]\n"
+        "\n"
+        "# Integration Monitoring\n"
+        "- Key Metrics: [List]\n"
+        "- API Logging: [Approach]\n"
+        "- Transaction Tracing: [Method]\n"
+        "</integration_architecture>\n"
     ),
     expected_output=(
-        "A comprehensive integration architecture document that includes:\n"
-        "- API specifications and designs\n"
-        "- Event patterns and message schemas\n"
-        "- Authentication and authorization approach\n"
-        "- Error handling and resilience patterns\n"
-        "- AWS service configurations for integration components\n"
-        "- Integration monitoring strategy"
+        "A structured integration architecture document enclosed in <integration_architecture> tags that includes "
+        "detailed API design, event architecture, authentication and authorization mechanisms, message schemas, "
+        "error handling strategies, and integration monitoring approach."
     ),
     agent=integration_specialist,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ],
+    context=[task_analyze_requirements, task_aws_service_selection],
     tools=[search_tool]
 )
 
 
-# Task 10: Progress Review and Integration (Manager Task)
-task_progress_review = Task(
-    description=(
-        "Review the outputs from all specialist teams and identify any gaps, inconsistencies, or integration issues.\n"
-        "For each specialist deliverable:\n"
-        "1. Ensure it aligns with the original requirements for {use_case}\n"
-        "2. Verify it integrates properly with other specialist outputs\n"
-        "3. Identify any missing details or inconsistencies\n"
-        "4. Provide feedback to specialists for revisions if needed\n\n"
-        "Also evaluate overall progress against the project plan and timeline, making adjustments as necessary."
-    ),
-    expected_output=(
-        "A comprehensive progress review report that identifies integration issues, gaps, and inconsistencies, "
-        "with specific feedback for each specialist and revised project plan if needed."
-    ),
-    agent=project_manager,
-    context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ]
-)
-
-# Task 11: Architecture Validation
+# Task 9: Architecture Validation
 task_architecture_validation = Task(
     description=(
         "Validate the complete architecture against AWS Well-Architected Framework principles and specific requirements for {use_case}.\n"
@@ -598,366 +632,230 @@ task_architecture_validation = Task(
         "4. Review performance efficiency for {performance} requirements\n"
         "5. Analyze cost optimization for {cost_profile}\n"
         "6. Verify implementation feasibility for {required_expertise} team\n\n"
+        "Use the search tool to research AWS Well-Architected Framework principles and best practices specific to your architecture components.\n\n"
         "Identify specific improvements with implementation details."
+        "\n\n"
+        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "<architecture_validation>\n"
+        "# Operational Excellence\n"
+        "- Score: [1-5]\n"
+        "- Strengths: [List]\n"
+        "- Gaps: [List]\n"
+        "- Recommendations: [List]\n"
+        "\n"
+        "# Security\n"
+        "- Score: [1-5]\n"
+        "- Strengths: [List]\n"
+        "- Gaps: [List]\n"
+        "- Recommendations: [List]\n"
+        "\n"
+        "# Reliability\n"
+        "- Score: [1-5]\n"
+        "- Strengths: [List]\n"
+        "- Gaps: [List]\n"
+        "- Recommendations: [List]\n"
+        "\n"
+        "# Performance Efficiency\n"
+        "- Score: [1-5]\n"
+        "- Strengths: [List]\n"
+        "- Gaps: [List]\n"
+        "- Recommendations: [List]\n"
+        "\n"
+        "# Cost Optimization\n"
+        "- Score: [1-5]\n"
+        "- Strengths: [List]\n"
+        "- Gaps: [List]\n"
+        "- Recommendations: [List]\n"
+        "\n"
+        "# Implementation Feasibility\n"
+        "- Score: [1-5]\n"
+        "- Risks: [List]\n"
+        "- Mitigations: [List]\n"
+        "</architecture_validation>\n"
     ),
     expected_output=(
-        "A comprehensive validation report that includes:\n"
-        "- Well-Architected Framework assessment\n"
-        "- Gap analysis against requirements\n"
-        "- Specific improvement recommendations\n"
-        "- Implementation risks and mitigations\n"
-        "- Validation of feasibility for the target team\n"
-        "- Final architecture recommendations"
+        "A structured architecture validation report enclosed in <architecture_validation> tags that includes "
+        "scores, strengths, gaps, and recommendations for each pillar of the AWS Well-Architected Framework, "
+        "plus implementation feasibility assessment with risks and mitigations."
     ),
     agent=implementation_validator,
+    # Simplified context - only include the necessary previous task outputs
     context=[
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        },
-        {
-            "from": task_progress_review,
-            "description": task_progress_review.description,
-            "expected_output": task_progress_review.expected_output
-        }
+        task_aws_service_selection, 
+        task_security_architecture, 
+        task_cost_optimization,
+        task_data_architecture,
+        task_devops_implementation,
+        task_integration_architecture
     ],
     tools=[search_tool]
 )
 
-# Task 12: Final Architecture Synthesis
+
+# Task 10: Final Architecture Synthesis
 task_final_synthesis = Task(
     description=(
-        "Synthesize all architectural inputs into a comprehensive, implementation-ready AWS architecture document for {use_case}.\n"
-        "The document must include:\n"
-        "1. Executive summary relating the architecture to business requirements\n"
-        "2. Software architecture overview with justification\n"
-        "3. Detailed AWS implementation architecture with diagrams\n"
-        "4. Component-by-component specifications with AWS service configurations\n"
-        "5. Security implementation details meeting {security_tier} and {compliance} requirements\n"
-        "6. Cost optimization approach aligned with {cost_profile}\n"
-        "7. Implementation plan feasible within {implementation_time} timeline\n"
-        "8. Operational considerations for {availability} requirements\n"
-        "9. Reference implementation code and configuration files\n\n"
-        "The document should be structured as a consultant's implementation guide providing all details needed for a {required_expertise} team."
+        "Synthesize all architectural inputs into a comprehensive, implementation-ready AWS architecture document for {use_case}.\n\n"
+        "IMPORTANT: Focus on creating a SPECIFIC and IMPLEMENTABLE architecture document with CONCRETE recommendations.\n\n"
+        "The document must include:\n\n"
+        "1. Executive Summary\n"
+        "   - Brief overview of requirements and approach\n"
+        "   - Key architecture decisions summary\n\n"
+        
+        "2. Architecture Overview\n"
+        "   - High-level architecture diagram description\n"
+        "   - Core components and their relationships\n\n"
+        
+        "3. AWS Service Implementation\n"
+        "   - SPECIFIC services with exact configurations\n"
+        "   - Instance types, sizes, and settings\n\n"
+        
+        "4. Security Implementation\n"
+        "   - Concrete security controls and configurations\n"
+        "   - Specific {compliance} implementation details\n\n"
+        
+        "5. Cost Details\n"
+        "   - Specific pricing models and estimated costs\n"
+        "   - Cost optimization strategies\n\n"
+        
+        "6. Implementation Plan\n"
+        "   - Phased deployment approach\n"
+        "   - Timeline and resource requirements\n\n"
+        
+        "CRITICAL REQUIREMENTS:\n"
+        "1. BE SPECIFIC - Include actual service names, instance types, and configurations\n"
+        "2. BE CONCRETE - Provide implementable details, not generalizations\n"
+        "3. FOCUS ON TECHNICAL SPECIFICATIONS - This is a technical architecture document\n"
+        "4. BE THOROUGH - Not just summary\n"
     ),
     expected_output=(
-        "A comprehensive AWS architecture implementation document for {use_case} that includes all required sections, "
-        "with sufficient detail to serve as a complete implementation guide for the target team."
+        "A comprehensive and SPECIFIC AWS architecture document with concrete implementation details "
+        "including exact services, configurations, security controls, and deployment steps. "
+        "The document must be technically detailed and immediately implementable, not a general overview."
     ),
     agent=solution_architect,
+    # Include the most relevant previous tasks
     context=[
-        {
-            "from": task_analyze_requirements,
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning,
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection,
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        },
-        {
-            "from": task_architecture_validation,
-            "description": task_architecture_validation.description,
-            "expected_output": task_architecture_validation.expected_output
-        },
-        {
-            "from": task_progress_review,
-            "description": task_progress_review.description,
-            "expected_output": task_progress_review.expected_output
-        }
+        task_analyze_requirements, 
+        task_design_software_architecture, 
+        task_aws_service_selection, 
+        task_security_architecture, 
+        task_cost_optimization,
+        task_data_architecture,
+        task_devops_implementation,
+        task_integration_architecture,
+        task_architecture_validation
     ]
 )
 
 
 
-# Helper function to extract the assessment scores from the requirements analysis output
-def extract_assessment_scores(requirements_analysis_output):
-    """
-    Extract assessment scores from the requirements analysis output.
-    Expects the output to contain a JSON object wrapped in <assessment_scores> tags.
-    """
-    pattern = r'<assessment_scores>(.*?)</assessment_scores>'
-    match = re.search(pattern, requirements_analysis_output, re.DOTALL)
-    
-    if match:
-        try:
-            scores_json = match.group(1).strip()
-            scores = json.loads(scores_json)
-            return scores
-        except json.JSONDecodeError:
-            # Fallback if JSON parsing fails
-            print("Error parsing assessment scores JSON. Using default values.")
-            return {
-                "software_architecture": 3,
-                "security": 3,
-                "cost_optimization": 3,
-                "data_complexity": 3,
-                "devops_complexity": 3,
-                "performance_requirements": 3,
-                "availability_requirements": 3,
-                "integration_complexity": 3  
-            }
-    else:
-        print("No assessment scores found in output. Using default values.")
-        return {
-            "software_architecture": 3,
-            "security": 3,
-            "cost_optimization": 3,
-            "data_complexity": 3,
-            "devops_complexity": 3,
-            "performance_requirements": 3,
-            "availability_requirements": 3,
-            "integration_complexity": 3  
-        }
-
-# Helper function to build the architecture crew based on assessment scores
-def build_architecture_crew(requirements_analysis_output, project_manager):
-    """
-    Dynamically build the architecture crew based on requirements analysis scores
-    """
-    # Extract assessment scores from the requirements analysis output
-    scores = extract_assessment_scores(requirements_analysis_output)
-    
-    # Initialize lists for agents and tasks
-    selected_agents = [project_manager, aws_expert, implementation_validator, solution_architect]
-    selected_tasks = [task_aws_service_selection, task_progress_review, task_architecture_validation, task_final_synthesis]
-    
-    # Keep track of included specialists for reporting
-    included_specialists = ["Project Manager", "AWS Solution Specialist", "Implementation Validator", "Solution Architecture Integrator"]
-    
-    # Conditionally include software architect
-    if scores.get("software_architecture", 0) >= 3:
-        selected_agents.append(software_architect)
-        selected_tasks.append(task_design_software_architecture)
-        included_specialists.append("Software Architecture Specialist")
-        # Update AWS service selection task to include software architecture context
-        task_aws_service_selection.context.append({
-            "from": task_design_software_architecture,
-            "description": task_design_software_architecture.description,
-            "expected_output": task_design_software_architecture.expected_output
-        })
-    
-    # Conditionally include security expert
-    if scores.get("security", 0) >= 3:
-        selected_agents.append(security_expert)
-        selected_tasks.append(task_security_architecture)
-        included_specialists.append("Security & Compliance Architect")
-    
-    # Conditionally include cost specialist
-    if scores.get("cost_optimization", 0) >= 3:
-        selected_agents.append(cost_specialist)
-        selected_tasks.append(task_cost_optimization)
-        included_specialists.append("Cost Optimization Specialist")
-    
-    # Conditionally include data architect
-    if scores.get("data_complexity", 0) >= 4:
-        selected_agents.append(data_architect)
-        selected_tasks.append(task_data_architecture)
-        included_specialists.append("Data Flow Architect")
-    
-    # Conditionally include devops engineer
-    if scores.get("devops_complexity", 0) >= 3:
-        selected_agents.append(devops_engineer)
-        selected_tasks.append(task_devops_implementation)
-        included_specialists.append("DevOps Specialist")
-    
-    # Conditionally include integration specialist
-    if scores.get("integration_complexity", 0) >= 3:
-        selected_agents.append(integration_specialist)
-        selected_tasks.append(task_integration_architecture)
-        included_specialists.append("Integration Specialist")
-
-    # Update progress review context with all selected tasks
-    update_task_contexts(selected_tasks)
-    
-    from langchain_openai import ChatOpenAI
-    import os
-    manager_llm = ChatOpenAI(
-        base_url=os.environ.get("OPENAI_API_BASE"),
-        model=os.environ.get("OPENAI_MODEL_NAME", "crewai-llama3.3"),
-    )
-    # Create the crew with the selected agents and tasks
-    crew = Crew(
-        agents=selected_agents,
-        tasks=selected_tasks,
-        process=Process.hierarchical,
-        manager=project_manager,
-        manager_llm=manager_llm,
-        verbose=2
-    )
-    
-    return crew, included_specialists
-
-# Helper function to update task contexts based on selected specialists
-def update_task_contexts(selected_tasks):
-    """
-    Update context references for integration tasks based on which specialist tasks are included
-    """
-    # Track which tasks are included by name for easier lookup
-    task_names = [task.description.split('\n')[0] for task in selected_tasks]
-    
-    # Update progress review context
-    task_progress_review.context = [
-        {
-            "from": task_analyze_requirements, 
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning, 
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection, 
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        }
-    ]
-    
-    # Add other selected tasks to progress review context
-    for task in selected_tasks:
-        if task != task_progress_review and task != task_aws_service_selection:
-            if not any(ctx.get("from") == task for ctx in task_progress_review.context):
-                task_progress_review.context.append({
-                    "from": task, 
-                    "description": task.description,
-                    "expected_output": task.expected_output
-                })
-    
-    # Update architecture validation context
-    task_architecture_validation.context = [
-        {
-            "from": task_aws_service_selection, 
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        },
-        {
-            "from": task_progress_review, 
-            "description": task_progress_review.description,
-            "expected_output": task_progress_review.expected_output
-        }
-    ]
-    
-    for task in selected_tasks:
-        if task != task_architecture_validation and task != task_progress_review and task != task_aws_service_selection:
-            if not any(ctx.get("from") == task for ctx in task_architecture_validation.context):
-                task_architecture_validation.context.append({
-                    "from": task, 
-                    "description": task.description,
-                    "expected_output": task.expected_output
-                })
-    
-    # Update final synthesis context
-    task_final_synthesis.context = [
-        {
-            "from": task_analyze_requirements, 
-            "description": task_analyze_requirements.description,
-            "expected_output": task_analyze_requirements.expected_output
-        },
-        {
-            "from": task_project_planning, 
-            "description": task_project_planning.description,
-            "expected_output": task_project_planning.expected_output
-        },
-        {
-            "from": task_aws_service_selection, 
-            "description": task_aws_service_selection.description,
-            "expected_output": task_aws_service_selection.expected_output
-        },
-        {
-            "from": task_architecture_validation, 
-            "description": task_architecture_validation.description,
-            "expected_output": task_architecture_validation.expected_output
-        },
-        {
-            "from": task_progress_review, 
-            "description": task_progress_review.description,
-            "expected_output": task_progress_review.expected_output
-        }
-    ]
-    
-    for task in selected_tasks:
-        if task != task_final_synthesis and task != task_architecture_validation and task != task_progress_review and task != task_aws_service_selection:
-            if not any(ctx.get("from") == task for ctx in task_final_synthesis.context):
-                task_final_synthesis.context.append({
-                    "from": task, 
-                    "description": task.description,
-                    "expected_output": task.expected_output
-                })
-
-
-# Main execution function with dynamic specialist recruitment
 def create_aws_architecture_recommendation(requirements):
     """
     Runs the CrewAI process to create an AWS architecture recommendation
-    with dynamic specialist recruitment based on requirement complexity
+    in a sequential manner without project manager coordination
     """
-
-    use_case = requirements.get("use_case")
-    performance = requirements.get("performance")
-    availability = requirements.get("availability")
-    security_tier = requirements.get("security_tier")
-    compliance = requirements.get("compliance",[])
-    cost_profile = requirements.get("cost_profile")
-    implementation_time = requirements.get("implementation_time")
-    required_expertise = requirements.get("required_expertise")
-    scalability = requirements.get("scalability")
-    ease_of_implementation = requirements.get("ease_of_implementation")
-    integration_complexity = requirements.get("integration_complexity", "Moderate")
-
-    compliance_formatted = ", ".join(compliance) if isinstance(compliance, list) else compliance
-
     # Package input parameters for easier passing
     use_case_params = {
-        "use_case": use_case,
-        "performance": performance,
-        "availability": availability,
-        "security_tier": security_tier,
-        "compliance": compliance_formatted,
-        "cost_profile": cost_profile,
-        "implementation_time": implementation_time,
-        "required_expertise": required_expertise,
-        "scalability": scalability,
-        "ease_of_implementation": ease_of_implementation,
-        "integration_complexity": integration_complexity
-
-        
+        "use_case": requirements.get("use_case"),
+        "performance": requirements.get("performance"),
+        "availability": requirements.get("availability"),
+        "security_tier": requirements.get("security_tier"),
+        "compliance": ", ".join(requirements.get("compliance", [])) if isinstance(requirements.get("compliance"), list) else requirements.get("compliance", ""),
+        "cost_profile": requirements.get("cost_profile"),
+        "implementation_time": requirements.get("implementation_time"),
+        "required_expertise": requirements.get("required_expertise"),
+        "scalability": requirements.get("scalability"),
+        "ease_of_implementation": requirements.get("ease_of_implementation"),
+        "integration_complexity": requirements.get("integration_complexity", "Moderate")
     }
     
-    # Step 1: Create the initial crew for requirements analysis and planning
-    initial_crew = Crew(
-        agents=[requirements_analyst, project_manager],
-        tasks=[task_analyze_requirements, task_project_planning],
-        process=Process.sequential,
-        verbose=2
+    # Create a sequential crew without the project manager
+    crew = Crew(
+        agents=[
+            requirements_analyst,
+            software_architect, 
+            aws_expert, 
+            security_expert, 
+            cost_specialist, 
+            data_architect, 
+            devops_engineer, 
+            integration_specialist, 
+            implementation_validator, 
+            solution_architect
+        ],
+        tasks=[
+            task_analyze_requirements,
+            task_design_software_architecture,
+            task_aws_service_selection,
+            task_security_architecture,
+            task_cost_optimization,
+            task_data_architecture,
+            task_devops_implementation,
+            task_integration_architecture,
+            task_architecture_validation,
+            task_final_synthesis
+        ],
+        process=Process.sequential,  # Change to sequential process
+        verbose=True
     )
     
-    # Step 2: Run the initial requirements analysis
-    print("Running initial requirements analysis and planning...")
-    initial_result = initial_crew.kickoff(inputs=use_case_params)
-    
-    # Step 3: Build the architecture crew based on requirements analysis
-    print("Building architecture team based on requirements analysis...")
-    architecture_crew, included_specialists = build_architecture_crew(initial_result, project_manager)
-    
-    # Step 4: Run the architecture crew to generate the recommendation
-    print(f"Running architecture team with {len(included_specialists)} specialists: {', '.join(included_specialists)}")
-    architecture_result = architecture_crew.kickoff(inputs=use_case_params)
-    
-    # Step 5: Return comprehensive results
-    return {
-        "requirements_analysis": initial_result,
-        "team_composition": included_specialists,
-        "architecture_recommendation": architecture_result
+    print("Running AWS architecture design process in sequential mode...")
+    result = crew.kickoff(inputs=use_case_params)
+
+    # Collect task outputs
+    task_outputs = {
+        "requirements_analysis": task_analyze_requirements.output.raw if hasattr(task_analyze_requirements, 'output') else None,
+        "software_architecture": task_design_software_architecture.output.raw if hasattr(task_design_software_architecture, 'output') else None,
+        "aws_service_selection": task_aws_service_selection.output.raw if hasattr(task_aws_service_selection, 'output') else None,
+        "security_architecture": task_security_architecture.output.raw if hasattr(task_security_architecture, 'output') else None,
+        "cost_optimization": task_cost_optimization.output.raw if hasattr(task_cost_optimization, 'output') else None,
+        "data_architecture": task_data_architecture.output.raw if hasattr(task_data_architecture, 'output') else None,
+        "devops_implementation": task_devops_implementation.output.raw if hasattr(task_devops_implementation, 'output') else None,
+        "integration_architecture": task_integration_architecture.output.raw if hasattr(task_integration_architecture, 'output') else None,
+        "architecture_validation": task_architecture_validation.output.raw if hasattr(task_architecture_validation, 'output') else None,
+        "final_synthesis": task_final_synthesis.output.raw if hasattr(task_final_synthesis, 'output') else None
     }
+    
+    # Print the output of each task
+    print("\n=== TASK OUTPUTS ===")
+    print("\n--- Requirements Analysis ---")
+    print(task_outputs["requirements_analysis"])
+    
+    print("\n--- Software Architecture Design ---")
+    print(task_outputs["software_architecture"])
+    
+    print("\n--- AWS Service Selection ---")
+    print(task_outputs["aws_service_selection"])
+    
+    print("\n--- Security Architecture ---")
+    print(task_outputs["security_architecture"])
+    
+    print("\n--- Cost Optimization ---")
+    print(task_outputs["cost_optimization"])
+    
+    print("\n--- Data Architecture ---")
+    print(task_outputs["data_architecture"])
+    
+    print("\n--- DevOps Implementation ---")
+    print(task_outputs["devops_implementation"])
+    
+    print("\n--- Integration Architecture ---")
+    print(task_outputs["integration_architecture"])
+    
+    print("\n--- Architecture Validation ---")
+    print(task_outputs["architecture_validation"])
+    
+    print("\n=== FINAL ARCHITECTURE SYNTHESIS ===")
+    print(task_outputs["final_synthesis"])
+    
+    return {
+        "architecture_recommendation": result,
+        "task_outputs": task_outputs
+    }
+
+
+
 
 
 # Example usage
@@ -978,12 +876,6 @@ if __name__ == "__main__":
     
     # Pass the requirements dictionary directly to the function
     result = create_aws_architecture_recommendation(use_case_requirements)
-    
-    print("\n=== REQUIREMENTS ANALYSIS ===")
-    print(result["requirements_analysis"])
-    
-    print("\n=== TEAM COMPOSITION ===")
-    print(result["team_composition"])
-    
+
     print("\n=== ARCHITECTURE RECOMMENDATION ===")
     print(result["architecture_recommendation"])

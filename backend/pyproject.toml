@@ -5,28 +5,25 @@ description = "FastAPI backend for the AWS SA Crew system"
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<=3.13"
-crewai = "0.28.8"
-crewai_tools = "0.1.6"
-langchain_community = "0.0.29"
-python-dotenv = "1.0.0"
-markdown = "3.4.3"
-pymarkdownlnt = "0.9.15"
-fastapi = "^0.110.0"
-uvicorn = "^0.29.0"
-setuptools = "^78.1.0"
+python = "3.12.*"
+crewai = "0.114.0"               # Updated to match frontend
+crewai_tools = "0.42.0"          # Updated to match frontend
+langchain_community = "0.3.22"   # Updated to match frontend
+python-dotenv = "1.1.0"          # Updated to match frontend
+markdown = "3.8"                 # Updated to match frontend
+pymarkdownlnt = "0.9.29"         # Updated to match frontend
+fastapi = "^0.110.0"             # Kept original
+uvicorn = "^0.29.0"              # Kept original
+setuptools = "^78.1.0"           # Kept original
 
 [tool.pyright]
-# https://github.com/microsoft/pyright/blob/main/docs/configuration.md
 useLibraryCodeForTypes = true
 exclude = [".cache"]
 
 [tool.ruff]
-# https://beta.ruff.rs/docs/configuration/
 select = ['E', 'W', 'F', 'I', 'B', 'C4', 'ARG', 'SIM']
 ignore = ['W291', 'W292', 'W293']
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
