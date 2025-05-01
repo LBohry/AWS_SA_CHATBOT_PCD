@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Formik, Form, Field, FormikHelpers } from "formik";
+import { Formik, Form } from "formik";
 import {
   Box,
   Button,
@@ -138,7 +138,7 @@ export default function WizardForm() {
   // Handle form submission
   const handleSubmit = async (
     values: Record<string, string>,
-    helpers: FormikHelpers<Record<string, string>>
+    helpers: any
   ) => {
     setLoading(true);
 
@@ -167,6 +167,8 @@ export default function WizardForm() {
       const resData = await response.json();
       if (resData.success) {
         setResult(resData.result);
+        // Default to showing task outputs tab
+        setResultTab(0);
       } else {
         console.error("API returned error:", resData);
         setResult(null);
@@ -206,12 +208,9 @@ export default function WizardForm() {
     return visibleSteps;
   };
 
-  // Render the task outputs
-  const renderTaskOutputs = () => {
-    if (!result || !result.task_outputs) return null;
-
-    const taskOutputs = result.task_outputs;
-    const taskNames = {
+  // Get a pretty name for the task key
+  const getTaskName = (key: string): string => {
+    const taskNames: Record<string, string> = {
       requirements_analysis: "Requirements Analysis",
       software_architecture: "Software Architecture",
       aws_service_selection: "AWS Service Selection",
@@ -224,13 +223,22 @@ export default function WizardForm() {
       final_synthesis: "Final Synthesis",
     };
 
+    return taskNames[key] || key;
+  };
+
+  // Render the task outputs
+  const renderTaskOutputs = () => {
+    if (!result || !result.task_outputs) return null;
+
+    const taskOutputs = result.task_outputs;
+
     return (
       <Box sx={{ width: "100%" }}>
         {Object.entries(taskOutputs).map(([key, output]) => (
           <Accordion key={key}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
-                {taskNames[key as keyof typeof taskNames] || key}
+                {getTaskName(key)}
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -249,30 +257,6 @@ export default function WizardForm() {
           </Accordion>
         ))}
       </Box>
-    );
-  };
-
-  // Render the final recommendation
-  const renderFinalRecommendation = () => {
-    if (!result || !result.architecture_recommendation) return null;
-
-    return (
-      <Paper 
-        variant="outlined" 
-        sx={{ 
-          p: 3, 
-          backgroundColor: "#f5f5f5", 
-          maxHeight: "600px", 
-          overflow: "auto" 
-        }}
-      >
-        <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-          {typeof result.architecture_recommendation === 'string' 
-            ? result.architecture_recommendation 
-            : JSON.stringify(result.architecture_recommendation, null, 2)
-          }
-        </pre>
-      </Paper>
     );
   };
 
@@ -383,7 +367,7 @@ export default function WizardForm() {
                 type="submit"
                 disabled={!isFormComplete || isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {isSubmitting ? "Submitting..." : "Generate Architecture"}
               </Button>
             </Box>
 
@@ -399,25 +383,14 @@ export default function WizardForm() {
             {result && (
               <Paper square elevation={3} sx={{ p: 3, mt: 3 }}>
                 <Typography variant="h4" gutterBottom>
-                  AWS Architecture Recommendation
+                  AWS Architecture Analysis
                 </Typography>
                 
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                  <Tabs 
-                    value={resultTab} 
-                    onChange={handleResultTabChange}
-                    aria-label="result tabs"
-                  >
-                    <Tab label="Final Recommendation" />
-                    <Tab label="Detailed Task Outputs" />
-                  </Tabs>
-                </Box>
+                <Typography variant="body1" sx={{ mb: 3 }}>
+                  Below you'll find detailed outputs from our AI architecture team, analyzing your requirements from multiple perspectives.
+                </Typography>
                 
-                {resultTab === 0 ? (
-                  renderFinalRecommendation()
-                ) : (
-                  renderTaskOutputs()
-                )}
+                {renderTaskOutputs()}
               </Paper>
             )}
           </Form>

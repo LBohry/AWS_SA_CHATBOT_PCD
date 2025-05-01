@@ -20,7 +20,7 @@ class Requirements(BaseModel):
 
 class ArchitectureResponse(BaseModel):
     success: bool = Field(True, description="Indicates if the request was successful")
-    result: Dict[str, Any] = Field(..., description="Complete result including architecture recommendation and task outputs")
+    result: Dict[str, Any] = Field(..., description="Task outputs from the architecture recommendation process")
 
 @app.post("/api/kickoff", response_model=ArchitectureResponse)
 async def kickoff_requirements(req: Requirements):

@@ -1,0 +1,13 @@
+{
+        "use_case": "e-commerce platform with 1M monthly users",
+        "performance": "high",
+        "availability": "99.99%",
+        "security_tier": "high",
+        "compliance": ["PCI-DSS"],
+        "cost_profile": "balanced",
+        "implementation_time": "3 months",
+        "required_expertise": "intermediate",
+        "scalability": "high",
+        "ease_of_implementation": "medium",
+        "integration_complexity": "Moderate"
+    }

@@ -11,6 +11,10 @@ load_dotenv()
 # Initialize tools
 search_tool = SerperDevTool()
 
+def get_llm():
+    return LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+
+llm = get_llm()
 
 # Define the specialist agents
 requirements_analyst = Agent(
@@ -23,13 +27,13 @@ requirements_analyst = Agent(
         "the technical implications of business requirements."
     ),
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 software_architect = Agent(
     role="Software Architecture Specialist",
-    goal="Design the optimal software architecture pattern for {use_case} before cloud implementation",
+    goal="Design the optimal software architecture pattern for {use_case} specifically for AWS cloud implementation",
     backstory=(
         "You are an expert software architect with deep knowledge of architecture patterns (microservices, "
         "monolithic, serverless, event-driven, etc). You understand how to match business requirements to "
@@ -38,14 +42,14 @@ software_architect = Agent(
         "effectively implemented on AWS."
     ),
     tools=[search_tool],
-    verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    verbose=True, 
+    allow_delegation=False,
+    llm=llm
 )
 
 aws_expert = Agent(
     role="AWS Solution Specialist",
-    goal="Recommend optimal AWS services and configurations for implementing {use_case}",
+    goal="Recommend specific and concrete AWS services for implementing {use_case}",
     backstory=(
         "You are an AWS-certified solutions architect with extensive hands-on experience. "
         "You have deep knowledge of AWS services, their limitations, pricing models, and best practices. "
@@ -54,8 +58,8 @@ aws_expert = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 security_expert = Agent(
@@ -69,13 +73,13 @@ security_expert = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 cost_specialist = Agent(
     role="Cost Optimization Specialist",
-    goal="Optimize the architecture for {cost_profile} while maintaining required performance",
+    goal="Provide concrete AWS cost optimization recommendations for {use_case} with {cost_profile}",
     backstory=(
         "You specialize in AWS cost optimization with experience in FinOps practices. "
         "You understand how to balance performance requirements with cost constraints, "
@@ -85,13 +89,13 @@ cost_specialist = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 data_architect = Agent(
     role="Data Flow Architect",
-    goal="Design efficient data flows and storage solutions for {use_case}",
+    goal="Design efficient data flows and AWS storage solutions for {use_case}",
     backstory=(
         "You are a data architect specializing in designing scalable data pipelines and storage solutions. "
         "You understand AWS data services (RDS, DynamoDB, S3, Kinesis, etc.) and when to apply them. "
@@ -100,13 +104,13 @@ data_architect = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 devops_engineer = Agent(
     role="DevOps Specialist",
-    goal="Design CI/CD pipelines and operational processes for {use_case} implementation",
+    goal="Design CI/CD pipelines and AWS operational processes for {use_case} implementation",
     backstory=(
         "You are a DevOps expert with experience implementing Infrastructure as Code and CI/CD pipelines on AWS. "
         "You understand AWS deployment services (CodePipeline, CodeBuild, etc.) and operational tools "
@@ -115,29 +119,29 @@ devops_engineer = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 integration_specialist = Agent(
     role="Integration Specialist",
-    goal="Design integration architecture for {use_case} with {integration_complexity} requirements",
+    goal="Design AWS integration architecture for {use_case} with {integration_complexity} requirements",
     backstory=(
         "You are an integration specialist with extensive experience connecting different systems and "
         "services. You excel at designing APIs, webhooks, event buses, and other integration patterns "
-        "that enable seamless communication between application components and external systems. "
+        "that enable seamless communication between application components and external systems using AWS services. "
         "You understand how to balance performance, reliability, and complexity to create "
         "integration architectures that match the {integration_complexity} requirements."
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 implementation_validator = Agent(
     role="Implementation Validator",
-    goal="Critically review the proposed architecture against AWS best practices and specific requirements",
+    goal="Critically review the proposed AWS architecture against AWS Well-Architected Framework principles",
     backstory=(
         "You are an AWS Well-Architected Framework specialist who reviews architectures for alignment with "
         "best practices and specific requirements. You're skilled at identifying gaps, overengineering, "
@@ -146,13 +150,13 @@ implementation_validator = Agent(
     ),
     tools=[search_tool],
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 solution_architect = Agent(
     role="Solution Architecture Integrator",
-    goal="Synthesize all specialist inputs into a comprehensive, implementation-ready architecture document for {use_case}",
+    goal="Synthesize all specialist inputs into a comprehensive, implementation-ready AWS architecture document",
     backstory=(
         "You are a Principal Solutions Architect with expertise in creating comprehensive AWS implementation guides. "
         "You excel at taking detailed inputs from various specialists and crafting them into a cohesive, comprehensive document "
@@ -161,8 +165,8 @@ solution_architect = Agent(
         "and for faithfully representing the expertise and recommendations from each specialist domain."
     ),
     verbose=True,
-    allow_delegation=False,  # Changed to False for sequential flow
-    llm=LLM(model="ollama/crewai-llama3.3", base_url="http://localhost:11434")
+    allow_delegation=False,
+    llm=llm
 )
 
 # Task 1: Initial Requirements Analysis
@@ -222,25 +226,21 @@ task_analyze_requirements = Task(
 # Task 2: Software Architecture Design 
 task_design_software_architecture = Task(
     description=(
-        "Design the optimal software architecture pattern for {use_case} based on the requirements analysis.\n"
+        "Design the optimal software architecture pattern for {use_case} based on the requirements analysis, "
+        "specifically tailored for AWS implementation.\n\n"
         "Consider whether the solution should use:\n"
         "1. Monolithic architecture vs. microservices\n"
         "2. Serverless vs. container-based approaches\n"
         "3. Event-driven vs. request-response patterns\n"
         "4. Data storage approaches (SQL, NoSQL, data lake)\n"
         "5. Integration patterns with existing systems\n\n"
-        "Use the search tool to conduct multiple specific searches for each decision point, such as:\n"
-        "- \"microservices vs monolithic for {use_case} with {performance} performance needs\"\n"
-        "- \"serverless architecture patterns for {use_case} with {scalability} scalability requirements\"\n"
-        "- \"event-driven architecture for {use_case} with {integration_complexity} integration needs\"\n\n"
-        "Important: Make separate, focused searches for each architectural decision rather than one general search.\n\n"
+        "Use the search tool to research each decision point with AWS implementation in mind.\n\n"
         "For each architectural decision:\n"
-        "1. Explain the rationale based on specific requirements\n"
-        "2. Identify implications for AWS implementation\n"
-        "3. Describe how it addresses {performance}, {scalability}, and {ease_of_implementation} needs\n"
-        "4. Detail how it aligns with {required_expertise} expertise level\n\n"
-        "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "1. Make a clear recommendation based on the requirements\n"
+        "2. Explain how it will be implemented on AWS\n"
+        "3. Describe how it addresses the requirements for performance, scalability, and ease of implementation\n"
+        "4. Detail how it aligns with the required expertise level\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<software_architecture>\n"
         "# Pattern Decision\n"
         "- Selected Pattern: [Pattern name]\n"
@@ -268,7 +268,7 @@ task_design_software_architecture = Task(
     expected_output=(
         "A structured software architecture design document enclosed in <software_architecture> tags that includes "
         "the selected architectural patterns with rationale, component structure, data flows, integration points, "
-        "and alignment with key requirements."
+        "and alignment with key requirements - all specifically tailored for AWS implementation."
     ),
     agent=software_architect,
     context=[task_analyze_requirements],
@@ -278,20 +278,15 @@ task_design_software_architecture = Task(
 # Task 3: AWS Service Selection
 task_aws_service_selection = Task(
     description=(
-        "Based on the project requirements and software architecture design, select the optimal AWS services to implement {use_case}.\n"
-        "For each component in the architecture:\n"
-        "1. Use the search tool to search for AWS service recommendations with specific requirements, such as:\n"
-        "   - \"high-performance database for {use_case} with {performance} needs and {availability} availability\"\n"
-        "   - \"compute solution for {use_case} with {scalability} scalability requirements\"\n"
-        "   - \"storage solution for {use_case} with {cost_profile} cost profile\"\n\n"
-        "2. Important: Make separate, focused searches for each major component rather than one general search.\n\n"
-        "3. For each AWS service recommended:\n"
-        "   - Detail specific instance types, sizes, and configurations to meet requirements\n"
-        "   - Explain how it integrates with other selected services\n"
-        "   - Identify any alternatives considered and why they were rejected\n"
-        "   - Provide sizing and capacity recommendations based on the use case scale\n\n"
-        "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "Based on the project requirements and software architecture design, select specific AWS services to implement {use_case}.\n\n"
+        "Review the software architecture design carefully and provide concrete AWS service recommendations for each component in that design.\n\n"
+        "For each component in the software architecture:\n"
+        "1. Select the most appropriate AWS service\n"
+        "2. Specify exact instance types, sizes, and configurations\n"
+        "3. Explain why this service is the best fit\n"
+        "4. Identify alternatives that were considered and why they were rejected\n\n"
+        "Use the search tool to research AWS services and their capabilities.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<aws_services>\n"
         "# Compute Services\n"
         "- Service: [Name]\n"
@@ -323,10 +318,12 @@ task_aws_service_selection = Task(
         "- Purpose: [What it handles]\n"
         "- Alternatives Rejected: [Name, reason]\n"
         "</aws_services>\n"
+        
+        "IMPORTANT: You MUST provide explicit AWS service recommendations. Do not respond with 'Thought:' or 'Action: None'. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
-        "A structured AWS service selection document enclosed in <aws_services> tags that includes "
-        "specific AWS services organized by category, with detailed configurations, purposes, and "
+        "A structured AWS service selection document enclosed in <aws_services> tags that specifies "
+        "the exact AWS services needed for each component, with detailed configurations, purposes, and "
         "alternatives considered for each service category."
     ),
     agent=aws_expert,
@@ -337,18 +334,16 @@ task_aws_service_selection = Task(
 # Task 4: Security & Compliance Architecture
 task_security_architecture = Task(
     description=(
-        "Design the security architecture for the {use_case} implementation to meet {security_tier} and {compliance} requirements.\n"
+        "Design a detailed security architecture for {use_case} that meets {security_tier} requirements and {compliance} standards.\n\n"
+        "Review the software architecture and AWS service recommendations carefully to ensure your security design aligns with them.\n\n"
         "For each AWS service in the proposed architecture:\n"
-        "1. Define IAM roles, policies, and permissions using least privilege principles\n"
-        "2. Design network security with security groups, NACLs, and VPC architecture\n"
-        "3. Specify encryption requirements for data at rest and in transit\n"
+        "1. Define specific IAM roles and policies with least privilege\n"
+        "2. Design network security with security groups and NACLs\n"
+        "3. Specify encryption requirements (KMS settings, etc.)\n"
         "4. Detail authentication and authorization mechanisms\n"
-        "5. Design logging, monitoring, and alerting for security events\n"
-        "6. Document how the architecture meets {compliance} requirements\n\n"
-        "Use the search tool to find specific information about AWS security best practices for each service and compliance requirement.\n\n"
-        "Include specific configurations and policies required for implementation."
-        "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "5. Define security monitoring and alerting\n\n"
+        "Use the search tool to research AWS security best practices and compliance requirements.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<security_architecture>\n"
         "# IAM Configuration\n"
         "- Roles: [List with purposes]\n"
@@ -380,11 +375,13 @@ task_security_architecture = Task(
         "- {compliance} Requirement 1: [Implementation]\n"
         "- {compliance} Requirement 2: [Implementation]\n"
         "</security_architecture>\n"
+        
+        "IMPORTANT: You MUST provide explicit security recommendations. Do not respond with 'Thought:' or 'Action: None'. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
         "A structured security architecture document enclosed in <security_architecture> tags that includes "
-        "detailed IAM configurations, network security design, data protection measures, authentication and "
-        "authorization mechanisms, monitoring approach, and compliance mapping."
+        "detailed IAM configurations, network security design, data protection measures, authentication mechanisms, "
+        "monitoring approach, and compliance mapping with specific AWS implementation details."
     ),
     agent=security_expert,
     context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection],
@@ -394,17 +391,17 @@ task_security_architecture = Task(
 # Task 5: Cost Optimization Design
 task_cost_optimization = Task(
     description=(
-        "Optimize the proposed AWS architecture for {cost_profile} requirements while maintaining {performance} and {availability} needs.\n"
+        "Create a detailed cost optimization plan for the proposed AWS architecture that aligns with {cost_profile} requirements.\n\n"
+        "Review the software architecture and AWS service recommendations carefully to ensure your cost optimization plan addresses the specific services selected.\n\n"
         "For each AWS service in the architecture:\n"
         "1. Recommend specific pricing models (on-demand, reserved, savings plans, spot)\n"
         "2. Suggest cost-effective instance types and sizes\n"
-        "3. Design auto-scaling approaches to optimize costs\n"
-        "4. Identify opportunities for serverless implementations to reduce costs\n"
-        "5. Design data transfer optimization to minimize network costs\n"
-        "6. Recommend operational practices for cost control\n\n"
-        "Use the search tool to find specific cost optimization recommendations for each AWS service in your architecture.\n\n"
-                "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "3. Design auto-scaling to optimize costs\n"
+        "4. Identify serverless opportunities\n"
+        "5. Recommend operational practices for cost control\n\n"
+        "Include estimated monthly costs for each service and total architecture.\n\n"
+        "Use the search tool to research AWS pricing and cost optimization best practices.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<cost_optimization>\n"
         "# Pricing Models\n"
         "- Compute: [On-demand/Reserved/Savings Plans/Spot recommendations]\n"
@@ -439,6 +436,8 @@ task_cost_optimization = Task(
         "- Other Services: [Est. cost]\n"
         "- Total Monthly: [Est. cost]\n"
         "</cost_optimization>\n"
+        
+        "IMPORTANT: You MUST provide explicit cost optimization recommendations. Do not respond with general thoughts. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
         "A structured cost optimization plan enclosed in <cost_optimization> tags that includes "
@@ -453,73 +452,73 @@ task_cost_optimization = Task(
 # Task 6: Data Architecture Design
 task_data_architecture = Task(
     description=(
-        "Design the data architecture for {use_case} that optimizes data flow, storage, and processing.\n"
-        "For the proposed AWS implementation:\n"
-        "1. Define data models and schema designs for all data stores\n"
-        "2. Design data ingestion, processing, and analytics pipelines\n"
-        "3. Specify data retention, backup, and disaster recovery approaches\n"
-        "4. Detail data security and privacy implementations for {compliance}\n"
-        "5. Design caching strategies for {performance} requirements\n"
-        "6. Optimize data storage for {cost_profile} requirements\n\n"
-        "Use the search tool to research best practices for data architecture in AWS for your specific use case and requirements.\n\n"
-           "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "Design a comprehensive data architecture for {use_case} using AWS data services.\n\n"
+        "Review the software architecture and AWS service recommendations carefully to ensure your data architecture aligns with them.\n\n"
+        "Include:\n"
+        "1. Data models and schemas for all data stores\n"
+        "2. Data ingestion, processing, and analytics pipelines using AWS services\n"
+        "3. Data retention, backup, and disaster recovery approaches\n"
+        "4. Data security and privacy implementations\n"
+        "5. Caching strategies and performance optimizations\n\n"
+        "Use the search tool to research AWS data services and best practices.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<data_architecture>\n"
         "# Data Models\n"
         "- Entity 1: [Key attributes, relationships]\n"
         "- Entity 2: [Key attributes, relationships]\n"
         "\n"
         "# Storage Solutions\n"
-        "- Primary Database: [Service, configuration, purpose]\n"
-        "- Secondary Database: [Service, configuration, purpose]\n"
-        "- Object Storage: [Service, configuration, purpose]\n"
-        "- Caching Layer: [Service, configuration, purpose]\n"
+        "- Primary Database: [AWS service, configuration, purpose]\n"
+        "- Secondary Database: [AWS service, configuration, purpose]\n"
+        "- Object Storage: [AWS service, configuration, purpose]\n"
+        "- Caching Layer: [AWS service, configuration, purpose]\n"
         "\n"
         "# Data Pipelines\n"
-        "- Ingestion Pipeline: [Services, flow]\n"
-        "- Processing Pipeline: [Services, flow]\n"
-        "- Analytics Pipeline: [Services, flow]\n"
+        "- Ingestion Pipeline: [AWS services, flow]\n"
+        "- Processing Pipeline: [AWS services, flow]\n"
+        "- Analytics Pipeline: [AWS services, flow]\n"
         "\n"
         "# Backup & Recovery\n"
-        "- Backup Strategy: [Method, frequency]\n"
+        "- Backup Strategy: [AWS service, method, frequency]\n"
         "- Retention Policy: [Details]\n"
         "- Recovery Process: [Steps, RTO/RPO]\n"
         "\n"
         "# Data Security\n"
-        "- Access Controls: [Methods]\n"
-        "- Encryption: [Methods]\n"
+        "- Access Controls: [AWS methods]\n"
+        "- Encryption: [AWS methods]\n"
         "- Compliance Controls: [For {compliance}]\n"
         "\n"
         "# Performance Optimization\n"
-        "- Caching Strategy: [Details]\n"
+        "- Caching Strategy: [AWS service, details]\n"
         "- Read/Write Optimization: [Methods]\n"
         "- Query Optimization: [Methods]\n"
         "</data_architecture>\n"
+        
+        "IMPORTANT: You MUST provide explicit data architecture recommendations. Do not respond with general thoughts. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
         "A structured data architecture document enclosed in <data_architecture> tags that includes "
-        "detailed data models, storage solutions, data pipeline designs, backup and recovery strategies, "
+        "detailed data models, AWS storage solutions, data pipeline designs using AWS services, backup and recovery strategies, "
         "data security measures, and performance optimization approaches."
     ),
     agent=data_architect,
-    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection, task_security_architecture],
+    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection],
     tools=[search_tool]
 )
 
 # Task 7: DevOps & Implementation Plan
 task_devops_implementation = Task(
     description=(
-        "Design the DevOps processes and implementation plan for deploying {use_case} within {implementation_time} timeline.\n"
-        "For the proposed AWS architecture:\n"
-        "1. Create Infrastructure as Code templates (CloudFormation or Terraform)\n"
-        "2. Design CI/CD pipeline for automated deployment\n"
-        "3. Define monitoring, alerting, and logging strategy\n"
-        "4. Create runbooks for common operational procedures\n"
-        "5. Detail implementation phases and timeline\n"
-        "6. Specify required team resources and skills\n\n"
-        "Use the search tool to research DevOps best practices and implementation patterns specific to your AWS architecture.\n\n"
-        "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "Design a detailed DevOps and implementation plan for the {use_case} on AWS within {implementation_time} timeline.\n\n"
+        "Review the software architecture and AWS service recommendations carefully to ensure your DevOps plan aligns with them.\n\n"
+        "Include:\n"
+        "1. Infrastructure as Code templates using CloudFormation or Terraform\n"
+        "2. CI/CD pipeline using AWS services\n"
+        "3. Monitoring, alerting, and logging strategy using AWS tools\n"
+        "4. Operational runbooks for common procedures\n"
+        "5. Implementation phases and timeline\n\n"
+        "Use the search tool to research AWS DevOps best practices and implementation patterns.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<devops_implementation>\n"
         "# Infrastructure as Code\n"
         "- Tool Selection: [CloudFormation/Terraform]\n"
@@ -527,7 +526,7 @@ task_devops_implementation = Task(
         "- Key Components: [List with sample code snippets]\n"
         "\n"
         "# CI/CD Pipeline\n"
-        "- Services: [CodePipeline/GitHub Actions/etc.]\n"
+        "- AWS Services: [CodePipeline/CodeBuild/etc.]\n"
         "- Pipeline Stages: [List with configurations]\n"
         "- Testing Strategy: [Approaches]\n"
         "- Deployment Strategy: [Blue-green/Canary/etc.]\n"
@@ -535,8 +534,8 @@ task_devops_implementation = Task(
         "# Monitoring & Alerting\n"
         "- CloudWatch Dashboards: [Key metrics]\n"
         "- CloudWatch Alarms: [Key thresholds]\n"
-        "- Log Management: [Approach]\n"
-        "- Notification Strategy: [Methods]\n"
+        "- Log Management: [AWS approach]\n"
+        "- Notification Strategy: [AWS methods]\n"
         "\n"
         "# Operational Runbooks\n"
         "- Deployment Procedure: [Steps]\n"
@@ -554,31 +553,32 @@ task_devops_implementation = Task(
         "- Skill Requirements: [List]\n"
         "- Estimated Effort: [Person-months]\n"
         "</devops_implementation>\n"
+        
+        "IMPORTANT: You MUST provide explicit DevOps and implementation recommendations. Do not respond with general thoughts. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
         "A structured DevOps implementation plan enclosed in <devops_implementation> tags that includes "
-        "detailed Infrastructure as Code approach, CI/CD pipeline design, monitoring and alerting strategy, "
+        "detailed Infrastructure as Code approach using AWS tools, CI/CD pipeline design with AWS services, monitoring strategy, "
         "operational runbooks, implementation timeline, and team resource requirements."
     ),
     agent=devops_engineer,
-    context=[task_analyze_requirements, task_aws_service_selection],
+    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection],
     tools=[search_tool]
 )
 
 # Task 8: Integration Architecture
 task_integration_architecture = Task(
     description=(
-        "Design the integration architecture for {use_case} with {integration_complexity} complexity requirements.\n"
-        "For the proposed AWS implementation:\n"
-        "1. Define APIs, webhooks, and event patterns needed for system integration\n"
-        "2. Specify AWS services for integration (API Gateway, EventBridge, etc.)\n"
-        "3. Design authentication and authorization for integration points\n"
-        "4. Create message schemas and contracts for system communication\n"
-        "5. Detail error handling and retry strategies\n"
-        "6. Define monitoring approach for integration points\n\n"
-        "Use the search tool to research integration patterns and AWS services that are appropriate for your specific integration requirements.\n\n"
-        "\n\n"
-        "STRUCTURE YOUR OUTPUT IN THE FOLLOWING FORMAT:\n"
+        "Design a detailed integration architecture for {use_case} with {integration_complexity} complexity using AWS integration services.\n\n"
+        "Review the software architecture and AWS service recommendations carefully to ensure your integration architecture aligns with them.\n\n"
+        "Include:\n"
+        "1. API design using AWS API Gateway\n"
+        "2. Event architecture using AWS EventBridge or other event services\n"
+        "3. Authentication and authorization for integrations\n"
+        "4. Message schemas and contracts\n"
+        "5. Error handling and retry strategies\n\n"
+        "Use the search tool to research AWS integration services and patterns.\n\n"
+        "YOUR RESPONSE MUST USE THE FOLLOWING FORMAT:\n"
         "<integration_architecture>\n"
         "# API Design\n"
         "- API Gateway Configuration: [Settings]\n"
@@ -591,34 +591,37 @@ task_integration_architecture = Task(
         "- Event Pattern 2: [Source, detail, purpose]\n"
         "\n"
         "# Authentication & Authorization\n"
-        "- API Authentication: [Methods]\n"
-        "- Service Authentication: [Methods]\n"
-        "- Authorization Controls: [Methods]\n"
+        "- API Authentication: [AWS methods]\n"
+        "- Service Authentication: [AWS methods]\n"
+        "- Authorization Controls: [AWS methods]\n"
         "\n"
         "# Message Schemas\n"
         "- Schema 1: [Purpose, key fields, sample]\n"
         "- Schema 2: [Purpose, key fields, sample]\n"
         "\n"
         "# Error Handling\n"
-        "- Retry Strategy: [Pattern, limits]\n"
-        "- Dead Letter Queues: [Configuration]\n"
-        "- Failure Notification: [Method]\n"
+        "- Retry Strategy: [AWS pattern, limits]\n"
+        "- Dead Letter Queues: [AWS configuration]\n"
+        "- Failure Notification: [AWS method]\n"
         "\n"
         "# Integration Monitoring\n"
         "- Key Metrics: [List]\n"
-        "- API Logging: [Approach]\n"
-        "- Transaction Tracing: [Method]\n"
+        "- API Logging: [AWS approach]\n"
+        "- Transaction Tracing: [AWS method]\n"
         "</integration_architecture>\n"
+        
+        "IMPORTANT: You MUST provide explicit integration architecture recommendations. Do not respond with general thoughts. The decision making process should be reflected in your final recommendations."
     ),
     expected_output=(
         "A structured integration architecture document enclosed in <integration_architecture> tags that includes "
-        "detailed API design, event architecture, authentication and authorization mechanisms, message schemas, "
-        "error handling strategies, and integration monitoring approach."
+        "detailed API design using AWS API Gateway, event architecture using AWS event services, authentication and authorization mechanisms, "
+        "message schemas, error handling strategies, and integration monitoring approach."
     ),
     agent=integration_specialist,
-    context=[task_analyze_requirements, task_aws_service_selection],
+    context=[task_analyze_requirements, task_design_software_architecture, task_aws_service_selection],
     tools=[search_tool]
 )
+
 
 
 # Task 9: Architecture Validation
@@ -850,7 +853,6 @@ def create_aws_architecture_recommendation(requirements):
     print(task_outputs["final_synthesis"])
     
     return {
-        "architecture_recommendation": result,
         "task_outputs": task_outputs
     }
 
@@ -861,18 +863,18 @@ def create_aws_architecture_recommendation(requirements):
 # Example usage
 if __name__ == "__main__":
     use_case_requirements = {
-        "use_case": "e-commerce platform with 1M monthly users",
-        "performance": "high",
-        "availability": "99.99%",
-        "security_tier": "high",
-        "compliance": ["PCI-DSS"],
-        "cost_profile": "balanced",
-        "implementation_time": "3 months",
-        "required_expertise": "intermediate",
-        "scalability": "high",
-        "ease_of_implementation": "medium",
-        "integration_complexity": "Moderate"
-    }
+    "use_case": "multi-agent chatbot system for software architecting",
+    "performance": "Standard",
+    "availability": "Fault tolerant",
+    "security_tier": "Basic",
+    "compliance": "Standard",
+    "cost_profile": "High-Budget",
+    "implementation_time": "Long (months)",
+    "required_expertise": "Intermediate",
+    "scalability": "High",
+    "ease_of_implementation": "Moderate",
+    "integration_complexity": "Moderate"
+}
     
     # Pass the requirements dictionary directly to the function
     result = create_aws_architecture_recommendation(use_case_requirements)
